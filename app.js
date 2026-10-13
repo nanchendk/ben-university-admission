@@ -19,16 +19,21 @@ const PY=()=>DATA.prevYear;
 function change(d){ if(!PY()) return null; if(d.prevEnglish==null) return 'new'; const a=rank(d.prevEnglish),b=rank(d.thresholds.英文); return b>a?'up':b<a?'down':'same'; }
 /* 英文報名判斷：'ok' 可報、'no' 英文未達、'listen' 學測英文可但需英聽（未選或英聽不足時） */
 function status(d){
-  if(!myEng) return null;
-  if(rank(d.thresholds.英文)>rank(myEng)) return 'no';
-  if(!d.listening) return 'ok';
-  if(!myLis) return 'listen';
+  const p=window.AdmissionProfile;
+  if(p && (p.profile.mode==='all'||p.profile.subject!=='英文')){
+    const x=p.result(d);
+    return x.state==='ok'?'ok':x.state==='no'?'no':'listen';
+  }
+  if(!myEng)return null;
+  if(rank(d.thresholds.英文)>rank(myEng))return 'no';
+  if(!d.listening)return 'ok';
+  if(!myLis)return 'listen';
   return LIS_RANK[myLis]>=LIS_RANK[d.listening]?'ok':'no';
 }
 const okCount=ds=>ds.filter(d=>status(d)==='ok').length;
 function badge(d){
   const st=status(d);let b='';
-  if(st==='ok') b+='<span class="badge ok">英文可報</span>';
+  if(st==='ok') b+='<span class="badge ok">檢定符合</span>';
   else if(st==='no') b+=`<span class="badge no">${rank(d.thresholds.英文)>rank(myEng)?'英文未達':'英聽未達'}</span>`;
   else if(st==='listen') b+=`<span class="badge warn">學測英文可，另需英聽 ${d.listening} 級</span>`;
   const ch=change(d);
@@ -158,6 +163,6 @@ function initControls(){
   l.onchange=()=>{myLis=l.value;save('myLis',myLis);route()};
   h.onchange=()=>{hideSpecial=h.checked;save('hideSpecial',hideSpecial?'1':'0');route()};
 }
-function start(d){DATA=d;initControls();route();window.addEventListener('hashchange',route)}
+function start(d){DATA=d;initControls();route();window.addEventListener('hashchange',route);document.addEventListener('admission-profile-change',()=>{const p=window.AdmissionProfile.profile;if(p.mode==='single'&&p.subject==='英文'){myEng=p.scores.英文||''}else{myEng=p.scores[p.subject]||''}route()})}
 if(window.__DATA__) start(window.__DATA__);
 else fetch('data.json').then(r=>{if(!r.ok)throw Error();return r.json()}).then(start).catch(()=>{app.innerHTML='<h1>暫時無法載入資料</h1><p>請透過 HTTP 伺服器開啟（例如 python -m http.server），再重新整理。</p>'});
