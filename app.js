@@ -14,7 +14,9 @@ const short=s=>s.name.replace(/^國立/,'');
 const rank=l=>l==='未達底標'?0:DATA.levels.indexOf(l);
 const departments=codes=>codes.flatMap(c=>DATA.schools[c].departments.filter(d=>!hideSpecial||!d.special).map(d=>({...d,school:c})));
 const counts=(ds,sub)=>DATA.levels.map(l=>ds.filter(d=>d.thresholds[sub]===l).length);
-const midUp=ds=>ds.filter(d=>rank(d.thresholds.英文)>=3).length;
+const activeSubject=()=>window.AdmissionProfile?.profile.subject||'英文';
+const activeScore=()=>window.AdmissionProfile?.profile.scores?.[activeSubject()]||'';
+const midUp=ds=>ds.filter(d=>rank(d.thresholds[activeSubject()])>=3).length;
 const PY=()=>DATA.prevYear;
 function change(d){ if(!PY()) return null; if(d.prevEnglish==null) return 'new'; const a=rank(d.prevEnglish),b=rank(d.thresholds.英文); return b>a?'up':b<a?'down':'same'; }
 /* 英文報名判斷：'ok' 可報、'no' 英文未達、'listen' 學測英文可但需英聽（未選或英聽不足時） */
@@ -34,8 +36,8 @@ const okCount=ds=>ds.filter(d=>status(d)==='ok').length;
 function badge(d){
   const st=status(d);let b='';
   if(st==='ok') b+='<span class="badge ok">檢定符合</span>';
-  else if(st==='no') b+=`<span class="badge no">${rank(d.thresholds.英文)>rank(myEng)?'英文未達':'英聽未達'}</span>`;
-  else if(st==='listen') b+=`<span class="badge warn">學測英文可，另需英聽 ${d.listening} 級</span>`;
+  else if(st==='no') b+=`<span class="badge no">${window.AdmissionProfile?.result(d).text||'檢定未達'}</span>`;
+  else if(st==='listen') b+=`<span class="badge warn">${window.AdmissionProfile?.result(d).text||'尚待確認'}</span>`;
   const ch=change(d);
   if(ch==='down') b+=`<span class="badge chg-down">較${PY()}放寬</span>`;
   else if(ch==='up') b+=`<span class="badge chg-up">較${PY()}提高</span>`;
@@ -44,8 +46,8 @@ function badge(d){
 }
 
 function distribution(ds){
-  const cs=counts(ds,'英文');
-  return `<div class="bar" role="img" aria-label="英文檢定分布：${DATA.levels.map((l,i)=>l+cs[i]+'系組').join('、')}">${cs.map((n,i)=>`<span class="seg" title="${DATA.levels[i]} ${n}/${ds.length}" style="width:${pct(n,ds.length)};background:${LV_COLOR[i]}"></span>`).join('')}</div>
+  const cs=counts(ds,activeSubject());
+  return `<div class="bar" role="img" aria-label="${activeSubject()}檢定分布：${DATA.levels.map((l,i)=>l+cs[i]+'系組').join('、')}">${cs.map((n,i)=>`<span class="seg" title="${DATA.levels[i]} ${n}/${ds.length}" style="width:${pct(n,ds.length)};background:${LV_COLOR[i]}"></span>`).join('')}</div>
   <div class="legend">${cs.map((n,i)=>n?`<span><i class="dot" style="background:${LV_COLOR[i]}"></i>${DATA.levels[i]} ${n}/${ds.length}・${pct(n,ds.length)}</span>`:'').join('')}</div>`;
 }
 function crumb(s,d,t){return `<nav class="crumb" aria-label="路徑"><a href="#">首頁</a>${t?`<span>／</span><a href="#tier/${t}">第${t}層</a>`:''}${s?`<span>／</span><a href="#school/${s.id}">${esc(short(s))}</a>`:''}${d?`<span>／</span><span>${esc(d.name)}</span>`:''}</nav>`}
@@ -54,26 +56,26 @@ function tierCard(i){
   const codes=DATA.groups[i],ds=departments(codes);
   return `<article class="tier" data-schoolnames="${esc(codes.map(c=>DATA.schools[c].name).join(' '))}">
   <div><div class="tier-title">第${i+1}層</div><div class="tier-name">${TIER_NAMES[i]}</div><div class="muted">${codes.length} 所學校・${ds.length} 系組</div><a class="tier-link" href="#tier/${i+1}">查看這一層</a></div>
-  <div><strong>英文檢定分布</strong>　<span class="muted">均標以上 ${midUp(ds)}/${ds.length}（${pct(midUp(ds),ds.length)}）</span>${distribution(ds)}
-  ${myEng?`<div class="okline">以你的英文程度（${myEng}${myLis?'、英聽 '+myLis:''}）可報：${okCount(ds)}/${ds.length} 系組</div>`:''}
+  <div><strong>${activeSubject()}檢定分布</strong>　<span class="muted">均標以上 ${midUp(ds)}/${ds.length}（${pct(midUp(ds),ds.length)}）</span>${distribution(ds)}
+  ${activeScore()?`<div class="okline">以你的${activeSubject()}程度（${activeScore()}）檢定符合：${okCount(ds)}/${ds.length} 系組</div>`:''}
   <div class="schools">${codes.map(c=>`<a class="school-pill" href="#school/${c}">${esc(short(DATA.schools[c]))}</a>`).join('')}</div></div></article>`;
 }
 function home(){
   const all=departments(Object.keys(DATA.schools));
-  app.innerHTML=`<section class="hero"><div><div class="kicker">${DATA.year} 學年度申請入學・學測檢定</div><h1 class="bracket">國立大學英文門檻地圖</h1><p class="muted">依五個層級瀏覽國立大學。點進學校，看各科有多少系組要求均標、前標或頂標；點占比格子就能列出那些系組。右上角選擇你的英文和英聽程度，會標出英文檢定過得了的系。</p></div><div class="hero-stat"><div><b>${Object.keys(DATA.schools).length}</b><span>國立大學</span></div><div><b>${all.length}</b><span>招生系組${hideSpecial?'（不含特殊專案組）':''}</span></div></div></section>
-  <div class="notice">閱讀方式：<strong>五層 → 學校 → 各科門檻占比 → 系組明細</strong>。色條是英文檢定分布，越深代表門檻越高。五層是自訂分類，不是官方排名。${hideSpecial?'目前已排除只限特定身分報名的特殊專案組，可在右上角改回。':''}</div>
+  app.innerHTML=`<section class="hero"><div><div class="kicker">${DATA.year} 學年度申請入學・學測檢定</div><h1 class="bracket">國立大學學測檢定地圖</h1><p class="muted">依五個層級瀏覽國立大學。點進學校，看各科有多少系組要求均標、前標或頂標；點占比格子就能列出那些系組。在上方選擇科目及成績，查看單科或六科檢定條件是否符合。</p></div><div class="hero-stat"><div><b>${Object.keys(DATA.schools).length}</b><span>國立大學</span></div><div><b>${all.length}</b><span>招生系組${hideSpecial?'（不含特殊專案組）':''}</span></div></div></section>
+  <div class="notice">閱讀方式：<strong>五層 → 學校 → 各科門檻占比 → 系組明細</strong>。色條是目前選擇科目的檢定分布，越深代表門檻越高。五層是自訂分類，不是官方排名。${hideSpecial?'目前已排除只限特定身分報名的特殊專案組，可在右上角改回。':''}</div>
   <input id="school-search" class="search" aria-label="搜尋學校" placeholder="搜尋學校，例如：臺灣、中山、海洋">
   <section class="tiers">${DATA.groups.map((_,i)=>tierCard(i)).join('')}</section><p id="no-schools" class="empty" hidden>找不到學校，換個名稱試試。</p>`;
   document.querySelector('#school-search').oninput=e=>{const q=e.target.value.trim().replace(/台/g,'臺');let n=0;document.querySelectorAll('.tier').forEach(el=>{el.hidden=!el.dataset.schoolnames.includes(q);if(!el.hidden)n++});document.querySelector('#no-schools').hidden=!!n;};
 }
 function summary(ds){
-  const n=ds.length,by=r=>ds.filter(d=>r.includes(rank(d.thresholds.英文))).length;
-  const parts=[['未設英文檢定',[0]],['英文底標・後標',[1,2]],['英文均標',[3]],['英文前標・頂標',[4,5]]];
+  const n=ds.length,by=r=>ds.filter(d=>r.includes(rank(d.thresholds[activeSubject()]))).length;
+  const parts=[['未設${activeSubject()}檢定',[0]],['${activeSubject()}底標・後標',[1,2]],['${activeSubject()}均標',[3]],['${activeSubject()}前標・頂標',[4,5]]];
   const up=ds.filter(d=>change(d)==='up').length,down=ds.filter(d=>change(d)==='down').length,nw=ds.filter(d=>change(d)==='new').length;
   return `<div class="summary"><div class="stat"><small>總招生系組</small><b>${n}</b></div>
   ${parts.map(([t,r])=>`<div class="stat"><small>${t}</small><b>${by(r)}/${n}</b></div>`).join('')}
-  ${myEng?`<div class="stat ok"><small>你可報（英文${myLis?'＋英聽':''}）</small><b>${okCount(ds)}/${n}</b></div>`:''}</div>
-  <p class="muted">四個英文分類互不重疊，加總等於總系組數；其中要求均標以上的共 ${midUp(ds)} 個。</p>
+  ${activeScore()?`<div class="stat ok"><small>檢定符合（${activeSubject()}）</small><b>${okCount(ds)}/${n}</b></div>`:''}</div>
+  <p class="muted">四個${activeSubject()}分類互不重疊，加總等於總系組數；其中${activeSubject()}要求均標以上的共 ${midUp(ds)} 個。</p>
   ${PY()?`<p class="changes">與 ${PY()} 學年度相比，英文檢定<strong>放寬 ${down}</strong> 個、<strong>提高 ${up}</strong> 個系組${nw?`；另有 ${nw} 個系組在 ${PY()} 年找不到同名系組（新設或更名）`:''}。</p>`:''}`;
 }
 function overview(ds){
@@ -159,7 +161,7 @@ function initControls(){
   e.innerHTML=ENG_OPTS.map(v=>`<option value="${v}"${v===myEng?' selected':''}>${v||'不使用'}</option>`).join('');
   l.innerHTML=LIS_OPTS.map(([v,t])=>`<option value="${v}"${v===myLis?' selected':''}>${t}</option>`).join('');
   h.checked=hideSpecial;
-  e.onchange=()=>{myEng=e.value;save('myEng',myEng);route()};
+  e.onchange=()=>{myEng=e.value;save('myEng',myEng);if(window.AdmissionProfile){window.AdmissionProfile.profile.scores.英文=myEng;document.dispatchEvent(new Event('admission-profile-change'))}else route()};
   l.onchange=()=>{myLis=l.value;save('myLis',myLis);route()};
   h.onchange=()=>{hideSpecial=h.checked;save('hideSpecial',hideSpecial?'1':'0');route()};
 }
