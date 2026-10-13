@@ -5,7 +5,17 @@ const percent=(a,b)=>b?(a/b*100).toFixed(1)+'%':'0%';
 const allSchools=()=>Object.values(DATA.schools).sort((a,b)=>a.name.localeCompare(b.name,'zh-Hant'));
 const visible=s=>s.departments.filter(d=>!hideSpecial||!d.special);
 const lisRank={A:3,B:2,C:1,F:0};
-function status(d){if(!myEng)return '';if(LEVELS.indexOf(d.thresholds.英文)>LEVELS.indexOf(myEng))return '英文未達';if(!d.listening)return '英文檢定符合';if(!myLis)return '尚待確認英聽';return lisRank[myLis]>=lisRank[d.listening]?'英文／英聽檢定符合':'英聽未達';}
+function status(d){
+ const p=window.AdmissionProfile;
+ if(p&&(p.profile.mode==='all'||p.profile.subject!=='英文')){
+  const x=p.result(d);return x.state==='ok'?'檢定符合':x.state==='no'?x.text:'尚待確認成績';
+ }
+ if(!myEng)return '';
+ if(LEVELS.indexOf(d.thresholds.英文)>LEVELS.indexOf(myEng))return '英文未達';
+ if(!d.listening)return '英文檢定符合';
+ if(!myLis)return '尚待確認英聽';
+ return lisRank[myLis]>=lisRank[d.listening]?'英文／英聽檢定符合':'英聽未達';
+}
 function selector(){
   const e=document.getElementById('my-eng'),l=document.getElementById('my-lis'),h=document.getElementById('hide-special');
   e.innerHTML=['','頂標','前標','均標','後標','底標','未達底標'].map(v=>'<option value="'+v+'">'+(v||'不使用')+'</option>').join('');
@@ -36,3 +46,5 @@ function home(){
 }
 function render(){const p=location.hash.slice(1).split('/');if(p[0]==='private-school'&&DATA.schools[p[1]])schoolPage(DATA.schools[p[1]]);else if(p[0]==='private-dept'&&DATA.schools[p[1]]){const s=DATA.schools[p[1]],d=s.departments.find(d=>d.id===p[2]);d?detail(s,d):home()}else home();}
 fetch('data-private.json').then(r=>{if(!r.ok)throw Error('private data unavailable');return r.json()}).then(d=>{DATA=d;selector();render();window.addEventListener('hashchange',render)}).catch(e=>{app.innerHTML='<h1>私立大學資料尚未就緒</h1><p>請確認 GitHub Actions 已完成產生 data-private.json。'+escapeHTML(e.message)+'</p>'});
+
+document.addEventListener('admission-profile-change',()=>{const p=window.AdmissionProfile.profile;myEng=p.scores[p.subject]||'';myLis=p.listening||myLis;if(DATA)render()});
