@@ -1,42 +1,48 @@
-# 115 學年度大學申請入學檢定地圖
+# 大學申請入學檢定地圖（115・國立＋私立）
 
-國立／私立大學雙入口。純 HTML、CSS、JavaScript，GitHub Pages 可部署。
+純 HTML、CSS、JavaScript，沒有前端框架或後端。
 
-## 網站入口
+## 兩種查詢模式
+- 單科模式：選「檢視科目」（六科任選），看各校系該科的檢定分布；設定自己的程度後，標出該科檢定符合的系組。
+- 六科綜合模式：輸入六科學測級分（沒考留空），依當年度五標換算後，逐一比對各系組的六科與英聽檢定，
+  結果分為「全部符合」「差 1 項」「差 2 項以上」。數A、數B 同列時任一科達標即可；APCS、術科檢定無法判斷，另行標示。
+- 「檢定符合」不代表能通過倍率篩選或第二階段甄試。成績只存在使用者瀏覽器（localStorage）。
 
-- [總入口](https://nanchendk.github.io/ben-university-admission/)：選擇國立或私立
-- [國立大學](https://nanchendk.github.io/ben-university-admission/national.html)：保留原 26 所、五層分類、114／115 比較
-- [私立大學](https://nanchendk.github.io/ben-university-admission/private.html)：依校名、科系、六科與英文／英聽門檻查詢
+## 檔案
+- index.html：網頁骨架、英文／英聽選擇器、特殊專案組開關、資料說明
+- styles.css：藍色系配色，支援深色模式與手機版
+- app.js：五層導覽、各科占比、累計篩選、可報判斷（含英聽）、114 比較、系組頁
+- data.json：115 年 26 所國立＋32 所私立大學、2,131 個系組（含 182 個特殊專案組，網頁預設排除）
+- source114.xlsx：114 年申請入學試算表，供 prepare.py 比對英文門檻變動
+- source.xlsx：甄選會 115 申請入學校系資料
+- prepare.py：把試算表轉成 data.json
+- year_map.csv：年度對應清單（更名、拆組、合併、新設），只有「確認狀態＝已確認」的列會被採用
+- special_overrides.csv：特殊專案組例外清單，只有「已確認」的列會被採用
 
-## 主要檔案
+## 人工確認流程
+1. 執行 prepare.py 後，看 review/ 資料夾：
+   - review/year_map_suggest.csv：還沒列進 year_map.csv 的未配對系組，附自動建議
+   - review/special_review.csv：備註寫「僅招收弱勢身分」但系名沒被判為特殊的系組
+2. 對照簡章確認後，把列複製到 year_map.csv 或 special_overrides.csv，
+   「確認狀態」改成「已確認」，「依據」寫明出處。
+3. 再跑一次 prepare.py。
+year_map.csv 的「114系名」可填多個（以；分隔），用於合併；「關係」可填 更名／拆組／合併／新設。
 
-| 檔案 | 用途 |
-| --- | --- |
-| index.html | 國立／私立雙入口 |
-| national.html | 原國立大學查詢介面 |
-| private.html | 新增私立大學查詢介面 |
-| app.js / private-app.js | 國立／私立查詢功能 |
-| styles.css | 共用視覺樣式 |
-| data.json | 國立大學 115 年資料 |
-| data-private.json | 私立大學 115 年資料，由 GitHub Actions 自動生成 |
-| data114.json | 國立大學 114 年比對資料 |
-| source.xlsx | 115 學年度申請入學來源試算表 |
-| prepare.py / build_private.py | 國立／私立資料轉換程式 |
+## 本機瀏覽
+    python -m http.server 8000
+開啟 http://localhost:8000/ 。直接雙擊 index.html 會讀不到 data.json。
 
-## 更新私立大學資料
+## 重新產生資料（例如 116 年簡章公布後）
+    pip install openpyxl
+    python prepare.py 116試算表.xlsx data.json --year 116 --prev source.xlsx
+（--prev 直接放前一年的試算表即可）
 
-修改 `source.xlsx` 或 `build_private.py` 後，GitHub Actions 的 `Build private university data` 工作流程會自動更新 `data-private.json`。也可以從 Actions 手動執行。
+## 每年要更新的地方
+- prepare.py 的 STANDARDS：補上新年度學測五標（大考中心每年 2 月公布），否則 prepare.py 會報錯提醒
 
-私立學校判斷：在 115 學年度申請入學資料中，排除「國立」及「臺北市立」學校。原國立入口沿用使用者自訂 26 所，**不是全部公立大學清單**。
-
-## 本機執行
-
-```bash
-python -m http.server 8000
-```
-
-開啟 http://localhost:8000/ 。若本機未產生 `data-private.json`，先安裝 `openpyxl` 後執行 `python build_private.py`。
-
-## 使用提醒
-
-英文／英聽檢定符合不等於符合其他科目、術科、特殊身分或完整報名資格。招生名額及分則以[大學甄選入學委員會](https://www.cac.edu.tw/)公告為準。國立五層為自訂分類，並非官方排名。
+## 修改位置
+- 國立／私立分類、分層與層級名稱：prepare.py 的 SECTORS
+- 特殊專案組判斷：prepare.py 的 SPECIAL（系名）與 RESTRICT（備註），例外以 special_overrides.csv 為準
+- 檢定判斷（單科／六科、數A數B二擇一、英聽、APCS）：app.js 的 evaluate；級分換算：toLevel
+- 年度比較狀態：app.js 的 change
+- 配色：styles.css 開頭的 :root
