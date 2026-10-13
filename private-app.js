@@ -22,9 +22,10 @@ function selector(){
   l.innerHTML=[['','未選'],['A','A 級'],['B','B 級'],['C','C 級'],['F','F 級／未考']].map(([v,t])=>'<option value="'+v+'">'+t+'</option>').join('');
   e.onchange=()=>{myEng=e.value;render()};l.onchange=()=>{myLis=l.value;render()};h.checked=true;h.onchange=()=>{hideSpecial=h.checked;render()};
 }
+const activeSubject=()=>window.AdmissionProfile?.profile.subject||'英文';
 function cards(ds){
   return '<div class="summary"><div class="stat"><small>系組總數</small><b>'+ds.length+'</b></div>'+
-  [['未設英文檢定',['未設檢定']],['英文底標／後標',['底標','後標']],['英文均標',['均標']],['英文前標／頂標',['前標','頂標']]].map(([t,ls])=>'<div class="stat"><small>'+t+'</small><b>'+ds.filter(d=>ls.includes(d.thresholds.英文)).length+'/'+ds.length+'</b></div>').join('')+'</div>';
+  [[`未設${activeSubject()}檢定`,['未設檢定']],[`${activeSubject()}底標／後標`,['底標','後標']],[`${activeSubject()}均標`,['均標']],[`${activeSubject()}前標／頂標`,['前標','頂標']]].map(([t,ls])=>'<div class="stat"><small>'+t+'</small><b>'+ds.filter(d=>ls.includes(d.thresholds[activeSubject()])).length+'/'+ds.length+'</b></div>').join('')+'</div>';
 }
 function schoolPage(s){
   const ds=visible(s);
