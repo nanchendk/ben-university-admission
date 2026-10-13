@@ -1,6 +1,9 @@
 let DATA;
 const app=document.querySelector('#app');
 const TIER_NAMES=['頂尖','台清交成政','四中・師大・北大','中段國立','地區型・教育大學'];
+const isPrivate=()=>!!DATA?.private;
+const groupNames=()=>isPrivate()?['學校清單 A','學校清單 B','學校清單 C','學校清單 D']:TIER_NAMES;
+const category=()=>isPrivate()?'私立':'國立';
 const LV_COLOR=['var(--l0)','var(--l1)','var(--l2)','var(--l3)','var(--l4)','var(--l5)'];
 const ENG_OPTS=['','頂標','前標','均標','後標','底標','未達底標'];
 const LIS_OPTS=[['','未選'],['A','A 級'],['B','B 級'],['C','C 級'],['F','F 級／未考']];
@@ -50,20 +53,20 @@ function distribution(ds){
   return `<div class="bar" role="img" aria-label="${activeSubject()}檢定分布：${DATA.levels.map((l,i)=>l+cs[i]+'系組').join('、')}">${cs.map((n,i)=>`<span class="seg" title="${DATA.levels[i]} ${n}/${ds.length}" style="width:${pct(n,ds.length)};background:${LV_COLOR[i]}"></span>`).join('')}</div>
   <div class="legend">${cs.map((n,i)=>n?`<span><i class="dot" style="background:${LV_COLOR[i]}"></i>${DATA.levels[i]} ${n}/${ds.length}・${pct(n,ds.length)}</span>`:'').join('')}</div>`;
 }
-function crumb(s,d,t){return `<nav class="crumb" aria-label="路徑"><a href="#">首頁</a>${t?`<span>／</span><a href="#tier/${t}">第${t}層</a>`:''}${s?`<span>／</span><a href="#school/${s.id}">${esc(short(s))}</a>`:''}${d?`<span>／</span><span>${esc(d.name)}</span>`:''}</nav>`}
+function crumb(s,d,t){return `<nav class="crumb" aria-label="路徑"><a href="#">首頁</a>${t?`<span>／</span><a href="#tier/${t}">${isPrivate()?'第'+t+'區':'第'+t+'層'}</a>`:''}${s?`<span>／</span><a href="#school/${s.id}">${esc(short(s))}</a>`:''}${d?`<span>／</span><span>${esc(d.name)}</span>`:''}</nav>`}
 
 function tierCard(i){
   const codes=DATA.groups[i],ds=departments(codes);
   return `<article class="tier" data-schoolnames="${esc(codes.map(c=>DATA.schools[c].name).join(' '))}">
-  <div><div class="tier-title">第${i+1}層</div><div class="tier-name">${TIER_NAMES[i]}</div><div class="muted">${codes.length} 所學校・${ds.length} 系組</div><a class="tier-link" href="#tier/${i+1}">查看這一層</a></div>
+  <div><div class="tier-title">${isPrivate()?'第'+(i+1)+'區':'第'+(i+1)+'層'}</div><div class="tier-name">${groupNames()[i]}</div><div class="muted">${codes.length} 所學校・${ds.length} 系組</div><a class="tier-link" href="#tier/${i+1}">查看這一層</a></div>
   <div><strong>${activeSubject()}檢定分布</strong>　<span class="muted">均標以上 ${midUp(ds)}/${ds.length}（${pct(midUp(ds),ds.length)}）</span>${distribution(ds)}
   ${activeScore()?`<div class="okline">以你的${activeSubject()}程度（${activeScore()}）檢定符合：${okCount(ds)}/${ds.length} 系組</div>`:''}
   <div class="schools">${codes.map(c=>`<a class="school-pill" href="#school/${c}">${esc(short(DATA.schools[c]))}</a>`).join('')}</div></div></article>`;
 }
 function home(){
   const all=departments(Object.keys(DATA.schools));
-  app.innerHTML=`<section class="hero"><div><div class="kicker">${DATA.year} 學年度申請入學・學測檢定</div><h1 class="bracket">國立大學學測檢定地圖</h1><p class="muted">依五個層級瀏覽國立大學。點進學校，看各科有多少系組要求均標、前標或頂標；點占比格子就能列出那些系組。在上方選擇科目及成績，查看單科或六科檢定條件是否符合。</p></div><div class="hero-stat"><div><b>${Object.keys(DATA.schools).length}</b><span>國立大學</span></div><div><b>${all.length}</b><span>招生系組${hideSpecial?'（不含特殊專案組）':''}</span></div></div></section>
-  <div class="notice">閱讀方式：<strong>五層 → 學校 → 各科門檻占比 → 系組明細</strong>。色條是目前選擇科目的檢定分布，越深代表門檻越高。五層是自訂分類，不是官方排名。${hideSpecial?'目前已排除只限特定身分報名的特殊專案組，可在右上角改回。':''}</div>
+  app.innerHTML=`<section class="hero"><div><div class="kicker">${DATA.year} 學年度申請入學・學測檢定</div><h1 class="bracket">${category()}大學學測檢定地圖</h1><p class="muted">${isPrivate()?'依校名排序分成四個瀏覽區（非排名）。':'依五個層級瀏覽國立大學。'}點進學校，看各科有多少系組要求均標、前標或頂標；點占比格子就能列出那些系組。在上方選擇科目及成績，查看單科或六科檢定條件是否符合。</p></div><div class="hero-stat"><div><b>${Object.keys(DATA.schools).length}</b><span>${category()}大學</span></div><div><b>${all.length}</b><span>招生系組${hideSpecial?'（不含特殊專案組）':''}</span></div></div></section>
+  <div class="notice">閱讀方式：<strong>${isPrivate()?'學校分區':'五層'} → 學校 → 各科門檻占比 → 系組明細</strong>。色條是目前選擇科目的檢定分布，越深代表門檻越高。${isPrivate()?'四區依學校名稱排序，不是排名。':'五層是自訂分類，不是官方排名。'}${hideSpecial?'目前已排除只限特定身分報名的特殊專案組，可在右上角改回。':''}</div>
   <input id="school-search" class="search" aria-label="搜尋學校" placeholder="搜尋學校，例如：臺灣、中山、海洋">
   <section class="tiers">${DATA.groups.map((_,i)=>tierCard(i)).join('')}</section><p id="no-schools" class="empty" hidden>找不到學校，換個名稱試試。</p>`;
   document.querySelector('#school-search').oninput=e=>{const q=e.target.value.trim().replace(/台/g,'臺');let n=0;document.querySelectorAll('.tier').forEach(el=>{el.hidden=!el.dataset.schoolnames.includes(q);if(!el.hidden)n++});document.querySelector('#no-schools').hidden=!!n;};
@@ -150,7 +153,7 @@ function detail(s,d){
 function route(){
   filter=null;const [type,a,b]=location.hash.slice(1).split('/');
   if(type==='school'&&DATA.schools[a]){const s=DATA.schools[a];scope([a],s.name,s.tier,s)}
-  else if(type==='tier'&&DATA.groups[Number(a)-1]){const n=Number(a);scope(DATA.groups[n-1],`第${n}層・${TIER_NAMES[n-1]}`,n)}
+  else if(type==='tier'&&DATA.groups[Number(a)-1]){const n=Number(a);scope(DATA.groups[n-1],`${isPrivate()?'第'+n+'區':'第'+n+'層'}・${groupNames()[n-1]}`,n)}
   else if(type==='dept'&&DATA.schools[a]){const s=DATA.schools[a],d=s.departments.find(d=>d.id===b);if(d)detail(s,{...d,school:a});else home()}
   else home();
   window.scrollTo(0,0);
