@@ -129,7 +129,7 @@ function scorebar(){
 function home(){
   const secs=Object.keys(DATA.sectors);
   const card=sec=>{const S=SEC(sec),codes=S.groups.flat(),ds=departments(codes);
-    return `<a class="entry" href="#sector/${sec}"><span class="entry-icon">${ICON[sec]||''}</span><span class="entry-name">${S.name}</span><span class="entry-count">${codes.length} 所</span><span class="entry-desc" title="${S.tierNames.join('、')}">依${['','一','二','三','四','五','六'][S.groups.length]}層分類瀏覽</span><span class="chip-tag">${ds.length} 個系組・${st.bs}均標以上 ${pct(midUp(ds),ds.length)}</span>${active()?`<span class="chip-tag ok">${okWord()} ${okCount(ds)} 個</span>`:''}</a>`;};
+    return `<a class="entry" href="#sector/${sec}"><span class="entry-icon">${ICON[sec]||''}</span><span class="entry-name">${S.name}</span><span class="entry-count">${codes.length} 所</span><span class="entry-desc" title="${S.tierNames.join('、')}">依${['','一','二','三','四','五','六'][S.groups.length]}層分類瀏覽</span><span class="chip-tag">共 ${ds.length} 個系組｜${midUp(ds)} 個要求${st.bs}均標以上（${pct(midUp(ds),ds.length)}）｜${ds.length-midUp(ds)} 個未要求均標</span>${active()?`<span class="chip-tag ok">${okWord()} ${okCount(ds)} 個</span>`:''}</a>`;};
   const steps=['選擇學校','選擇科系','檢定分析'];
   app.innerHTML=`<section class="portal">
     <h1 class="portal-title">${DATA.year} 學年度大學申請入學檢定地圖</h1>
