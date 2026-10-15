@@ -128,8 +128,11 @@ function scorebar(){
 /* ---------- 頁面 ---------- */
 function home(){
   const secs=Object.keys(DATA.sectors);
-  const card=sec=>{const S=SEC(sec),codes=S.groups.flat(),ds=departments(codes);
-    return `<a class="entry" href="#sector/${sec}"><span class="entry-icon">${ICON[sec]||''}</span><span class="entry-name">${S.name}</span><span class="entry-count">${codes.length} 所</span><span class="entry-desc" title="${S.tierNames.join('、')}">依${['','一','二','三','四','五','六'][S.groups.length]}層分類瀏覽</span><span class="chip-tag">共 ${ds.length} 個系組｜${midUp(ds)} 個要求${st.bs}均標以上（${pct(midUp(ds),ds.length)}）｜${ds.length-midUp(ds)} 個未要求均標</span>${active()?`<span class="chip-tag ok">${okWord()} ${okCount(ds)} 個</span>`:''}</a>`;};
+  const card=sec=>{const S=SEC(sec),codes=S.groups.flat(),ds=departments(codes),high=midUp(ds),low=ds.length-high,ok=active()?okCount(ds):null;
+    const label=st.mode==='full'?'已輸入學測成績':st.bs+' '+st.myLv;
+    const main=active()? `<span class="entry-result-label">依你的成績（${esc(label)}）</span><span class="entry-result-number">${ok} <small>/ ${ds.length} 個系組</small></span><span class="entry-result-caption">${esc(okWord())}；其餘 ${ds.length-ok} 個未確認符合</span>`:
+      `<span class="entry-result-label">${st.bs}檢定門檻分布</span><span class="entry-result-number">${high} <small>個系組要求均標以上</small></span><span class="entry-result-caption">${pct(high,ds.length)} 要求均標以上・${low} 個未要求均標</span>`;
+    return `<a class="entry" href="#sector/${sec}"><span class="entry-icon">${ICON[sec]||''}</span><span class="entry-name">${S.name}</span><span class="entry-count">${codes.length} 所</span><span class="entry-desc" title="${S.tierNames.join('、')}">共 ${ds.length} 個招生系組・依${['','一','二','三','四','五','六'][S.groups.length]}層瀏覽</span><span class="entry-result">${main}</span><span class="entry-result-note">${active()?'僅代表已設定科目的檢定比對，不代表錄取或完整報名資格。':'尚未輸入成績，這是學校設定的門檻，並非不可申請數。'}</span></a>`;};
   const steps=['選擇學校','選擇科系','檢定分析'];
   app.innerHTML=`<section class="portal">
     <h1 class="portal-title">${DATA.year} 學年度大學申請入學檢定地圖</h1>
