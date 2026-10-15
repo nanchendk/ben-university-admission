@@ -164,3 +164,11 @@ footer strong{color:var(--ink)}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .badge.near{background:#3A2E14;color:#F2C46B}}
 .chip-tag.ok{background:var(--ok-soft);color:var(--ok)}
 @media(max-width:720px){.fld.score input{width:56px}}
+
+/* 首頁落點資訊：以使用者可符合檢定的系組數為第一視覺層級 */
+.entry-result{display:flex;flex-direction:column;align-items:center;gap:6px;width:100%;padding:14px 10px;margin-top:12px;background:var(--accent-soft);border-radius:16px;color:var(--ink);text-align:center}
+.entry-result-label{font-size:14px;font-weight:700;color:var(--accent)}
+.entry-result-number{font-size:clamp(27px,3vw,37px);font-weight:800;line-height:1.25;font-variant-numeric:tabular-nums}
+.entry-result-number small{font-size:14px;font-weight:600;color:var(--muted)}
+.entry-result-caption{font-size:13px;line-height:1.5;color:var(--accent);font-weight:600}
+.entry-result-note{font-size:12px;line-height:1.5;color:var(--muted);text-align:center;max-width:360px}
